@@ -6,7 +6,8 @@ import {
     SafeAreaView,
     TouchableOpacity,
     Modal,
-    ActivityIndicator
+    ActivityIndicator,
+    FlatList
 } from 'react-native'
 import { useNavigation, useIsFocused } from '@react-navigation/native'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
@@ -16,6 +17,7 @@ import firestore from '@react-native-firebase/firestore'
 
 import FabButton from '../../components/FabButton'
 import ModalNewRoom from '../../components/ModalNewRoom'
+import ChatList from '../../components/ChatList'
 
 export default function ChatRoom() {
     const navigation = useNavigation()
@@ -26,6 +28,7 @@ export default function ChatRoom() {
 
     const [threads, setThreads] = useState([])
     const [loading, setLoading] = useState(true)
+    const [updateScreen, setUpdateScreen] = useState(false)
 
     useEffect(() => {
         const hasUser = auth().currentUser ? auth().currentUser.toJSON() : null
@@ -67,7 +70,7 @@ export default function ChatRoom() {
             isActive = false
         }
 
-    }, [isFocused])
+    }, [isFocused, updateScreen])
 
     function handleSignOut() {
         auth()
@@ -79,6 +82,10 @@ export default function ChatRoom() {
             .catch(() => {
                 console.log('Não possui nenhum usuário')
             })
+    }
+
+    function deleteRoom(owner, id){
+        console.log('deletando')
     }
 
     if(loading){
@@ -106,10 +113,22 @@ export default function ChatRoom() {
                 </TouchableOpacity>
             </View>
 
+            <FlatList
+                data={threads}
+                keyExtractor={item => item._id}
+                showsVerticalScrollIndicator={false}
+                renderItem={({item}) => (
+                    <ChatList data={item} deleteRoom={() => deleteRoom(item.owner, item._id)}/>
+                )} 
+            />
+
             <FabButton setVisible={() => setModalVisible(true)} userStatus={user} />
 
             <Modal visible={modalVisible} animationType='fade' transparent={true}>
-                <ModalNewRoom setVisible={() => setModalVisible(false)} />
+                <ModalNewRoom 
+                    setVisible={() => setModalVisible(false)}
+                    setUpdateScreen={() => setUpdateScreen(!updateScreen)} 
+                />
             </Modal>
         </SafeAreaView>
     )
@@ -118,6 +137,7 @@ export default function ChatRoom() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#fff',
     },
     headerRoom: {
         flexDirection: 'row',
