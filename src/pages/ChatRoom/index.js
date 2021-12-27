@@ -7,7 +7,8 @@ import {
     TouchableOpacity,
     Modal,
     ActivityIndicator,
-    FlatList
+    FlatList,
+    Alert
 } from 'react-native'
 import { useNavigation, useIsFocused } from '@react-navigation/native'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
@@ -84,8 +85,35 @@ export default function ChatRoom() {
             })
     }
 
-    function deleteRoom(owner, id){
-        console.log('deletando')
+    function deleteRoom(ownerId, idRoom){
+        if(ownerId !== user?.uid) return
+
+        Alert.alert(
+            "Atenção!",
+            "Você tem certeza que deseja deletar essa sala?",
+            [
+                {
+                    text: "Cancel",
+                    onPress: () => {},
+                    style: "cancel"
+                },
+                {
+                    text: "OK",
+                    onPress: () => handleDeleteRoom(idRoom),
+
+                }
+            ]
+        )
+    }
+
+    async function handleDeleteRoom(idRoom){
+        await firestore()
+        .collection('MESSAGE_THREADS')
+        .doc(idRoom)
+        .delete()
+
+        setUpdateScreen(!updateScreen)
+
     }
 
     if(loading){
@@ -118,7 +146,11 @@ export default function ChatRoom() {
                 keyExtractor={item => item._id}
                 showsVerticalScrollIndicator={false}
                 renderItem={({item}) => (
-                    <ChatList data={item} deleteRoom={() => deleteRoom(item.owner, item._id)}/>
+                    <ChatList 
+                        data={item} 
+                        deleteRoom={() => deleteRoom(item.owner, item._id)}
+                        userStatus={user}
+                    />
                 )} 
             />
 
