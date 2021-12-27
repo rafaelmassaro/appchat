@@ -5,12 +5,14 @@ import {
     StyleSheet,
     SafeAreaView,
     TouchableOpacity,
-    Modal
+    Modal,
+    ActivityIndicator
 } from 'react-native'
 import { useNavigation, useIsFocused } from '@react-navigation/native'
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons'
 
 import auth from '@react-native-firebase/auth'
+import firestore from '@react-native-firebase/firestore'
 
 import FabButton from '../../components/FabButton'
 import ModalNewRoom from '../../components/ModalNewRoom'
@@ -22,11 +24,49 @@ export default function ChatRoom() {
     const [user, setUser] = useState(null)
     const [modalVisible, setModalVisible] = useState(false)
 
+    const [threads, setThreads] = useState([])
+    const [loading, setLoading] = useState(true)
+
     useEffect(() => {
         const hasUser = auth().currentUser ? auth().currentUser.toJSON() : null
 
-        console.log(hasUser)
+        // console.log(hasUser)
         setUser(hasUser)
+    }, [isFocused])
+
+    useEffect(() =>{
+        let isActive = true
+
+        function getChats(){
+            firestore()
+            .collection('MESSAGE_THREADS')
+            .orderBy('lastMessage.createdAt', 'desc')
+            .limit(10)
+            .get()
+            .then((snapshot) => {
+                const threads = snapshot.docs.map( documentSnapshot => {
+                    return{
+                        _id: documentSnapshot.id,
+                        name: '',
+                        lastMessage: {text: ''},
+                        ...documentSnapshot.data()
+                    }
+                })
+
+                if(isActive){
+                    setThreads(threads)
+                    setLoading(false)
+                    console.log(threads)
+                }
+            })
+        }
+
+        getChats()
+
+        return () => {
+            isActive = false
+        }
+
     }, [isFocused])
 
     function handleSignOut() {
@@ -39,6 +79,12 @@ export default function ChatRoom() {
             .catch(() => {
                 console.log('Não possui nenhum usuário')
             })
+    }
+
+    if(loading){
+        return(
+            <ActivityIndicator size="large" color="#555"/>
+        )
     }
 
     return (

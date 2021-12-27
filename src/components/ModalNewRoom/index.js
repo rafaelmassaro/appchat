@@ -8,8 +8,47 @@ import {
     TouchableWithoutFeedback
 } from 'react-native'
 
+import firestore from '@react-native-firebase/firestore'
+import auth from '@react-native-firebase/auth'
+
 export default function ModalNewRoom({ setVisible }) {
     const [roomName, setRoomName] = useState('')
+
+    const user = auth().currentUser.toJSON()
+
+    function handleButtonCreate(){
+        if(roomName === '') return
+
+        createRoom()
+    }
+
+    function createRoom(){
+        firestore()
+        .collection('MESSAGE_THREADS')
+        .add({
+            name: roomName,
+            owner: user.uid,
+            lastMessage: {
+                text: `Grupo ${roomName} criado. Seja bem-vindo(a)!`,
+                createdAt: firestore.FieldValue.serverTimestamp(),
+            }
+        })
+        .then((docRef) => {
+            docRef.collection('MESSAGES')
+            .add({
+                text: `Grupo ${roomName} criado. Seja bem-vindo(a)!`,
+                createdAt: firestore.FieldValue.serverTimestamp(),
+                system: true
+            })
+            .then(() => {
+                setVisible()
+            })
+
+        })
+        .catch((error) => {
+            console.log('Erro: ', error)
+        })
+    }
 
     return (
         <View style={styles.container}>
@@ -27,9 +66,20 @@ export default function ModalNewRoom({ setVisible }) {
                     style={styles.input}
                 />
 
-                <TouchableOpacity style={styles.buttonCreate}>
+                <TouchableOpacity 
+                    style={styles.buttonCreate}
+                    onPress={handleButtonCreate}
+                >
                     <Text style={styles.buttonText}>Criar sala</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity 
+                    style={styles.backButton}
+                    onPress={setVisible}
+                >
+                    <Text>Voltar</Text>
+                </TouchableOpacity>
+                
             </View>
         </View>
     )
@@ -73,5 +123,10 @@ const styles = StyleSheet.create({
         fontSize: 19,
         fontWeight: 'bold',
         color: '#fff',
+    },
+    backButton: {
+        marginTop: 10,
+        alignItems: 'center',
+        justifyContent: 'center'
     }
 })
